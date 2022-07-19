@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+// 変換後のgoのパッケージ名
+option go_package = "./pb";
+
+package employee;
+
+import "proto/date.proto";
+
+message Employee {
+    int32 id = 1;
+    string name = 2;
+    string email = 3;
+    Occupation occupation = 4; // スカラ型と同じように扱える
+    repeated string phone_number = 5; // 0個以上の電話番号
+    map<string, Company.Project> project = 6; // mapにはrepeatedを付けることが出来ない
+    // oneofはrepeatedを付けれない
+    // 中のタグ番号は親の続きとなる
+    oneof profile {
+        string text = 7;
+        Video video = 8;
+    }
+    date.Date birthday = 9;
+}
+
+// タグ番号が0から始まる
+enum Occupation {
+    OCCUPATION_UNKNOWN = 0;
+    ENGINEER = 1;
+    DESIGNER = 2;
+    MANAGER = 3;
+}
+
+// メッセージのネスト
+message Company {
+    message Project {}
+}
+
+message Project {}
+message Video {}
