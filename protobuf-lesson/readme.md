@@ -113,12 +113,164 @@ protoc -I. --go_out=. proto/*.proto
 
 # pb/date.pb.goのimportエラーの為
 go mod tidy
+```
+
+# gRPCとは
+Googleによって2015年にオープンソース化されたRPC(Remote Procedure Call)の為のプロトコル
+
+## RPC(Remote Procedure Call)とは
+- Remote = 遠隔地(リモート)サーバーの
+- Procedure = 手続き(メソッド)を
+- Call = 呼び出す(実行する)
+- ネットワーク上の他の端末と通信するための仕組み
+- REST APIのようにパスやメソッドを指定する必要はなく、メソッド名と引数を指定する
+- gRPC以外にJSON-RPCなどがあるが、今はgRPCがデファクトスタンダード
+
+## gRPCの特徴
+- データフォーマットはProtocol Buffersを使用
+- - バイナリにシリアライズすることで送信データ量が減り、高速な通信を実現
+- 型付けされたデータ転送が可能
+- IDL(Protocol Buffers)からサーバー側・クライアント側に必要なソースコードを生成
+- 通信にはHTTP/2を使用
+
+- 特定の言語やプラットフォームに依存しない
+![gRPCの特徴](images/gRPCの特徴.png)
+
+## gRPCが適したケース
+- Microservice間の通信
+- - 複数の言語やプラットフォームで構成される可能性がある
+- - バックエンド間であればgRPCの恩恵が多く得られる
+
+- モバイルユーザーが利用するサービス
+- - 通信料が削減できるため、通信容量制限にかかりにくい
+
+- 速度が求められる場合
+
+## gRPCの開発の流れ
+1. protoファイルの作成
+1. protoファイルをコンパイルしてサーバー・クライアントのひな形コードを作成
+1. ひな形コードを使用してサーバー・クライアントを実装
 
 
+# HTTP/2
+## HTTP/1.1の課題
+- リクエストの課題化
+- - 1リクエストに対して1レスポンスという制約があり、大量のリソースで構成されるページを表示するには大きなネックになる
+- プロトコルオーバーヘッド
+- - Coockieやトークンなどを毎回リクエストヘッダに付与してリクエストするため、オーバーヘッドが大きくなる
+
+## HTTP/2の特徴
+- ストリームという概念を導入
+- - 1つのTCP接続を用いて、複数のリクエスト/レスポンスのやり取りが可能
+- - TCP接続を減らすことができるので、サーバーの負荷軽減
+
+- ヘッダーの圧縮
+- - ヘッダーをHPACKという圧縮方式で圧縮し、さらにキャッシュを行う事で、差分のみを送受信することで効率化
+
+- サーバープッシュ
+- - クライアントからのリクエストなしにサーバーからデータを送信できる
+- - 事前に必要と思われるリソースを送信しておくことで、ラウンドトリップの回数を削減し、リソース読み込みまでの時間を短縮
+
+### Demo
+- http://www.http2demo.io
+
+## Serviceとは
+- RPC(メソッド)の実装単位
+- - サービス内に定義するメソッドをエンドポイントになる
+- - 1サービス内に複数のメソッドを定義できる
+- サービス名、メソッド名、引数、戻り値を定義する必要がある
+- コンパイルしてgoファイルに変換すると、インターフェースとなる
+- - アプリケーション側でこのインターフェースを実装する
+
+### Serviceのサンプル
+```
+message SayHelloRequest {}
+message SayHelloResponse {}
+
+service Greeter {
+    rpc SayHello (SayHelloRequest) returns (SayHelloReponse);
+}
+```
+
+## gRPCの通信方式
+### 4種類の通信方式
+- Unary RPC
+- Server Streaming RPC
+- Client Streaming RPC
+- Bidirectional Streaming RPC
+
+## Unary RPC
+- 1リクエスト1レスポンスの方式
+- 通常の関数コールのように扱うことが出来る
+- 用途
+- - APIなど
+
+![Unary](images/UnaryRPC.png)
+
+- `Service定義`
+```
+message SayHelloRequest {}
+message SayHelloResponse {}
+
+service Greeter {
+    rpc SayHello (SayHelloRequest) returns (SayHelloReponse);
+}
 ```
 
 
+## Server Streaming RPC
+- 1リクエスト・複数レスポンスの方式
+- クライアントはサーバーから送信完了の信号が送信されるまでストリームのメッセージを読み続ける
+- 用途
+- - サーバーからのプッシュ通知など
+
+![ServerStreamingRPC](images/ServerStreamingRPC.png)
+
+- `Service定義`
+```
+message SayHelloRequest {}
+message SayHelloResponse {}
+
+service Greeter {
+    rpc SayHello (SayHelloRequest) returns (stream SayHelloReponse);
+}
+```
+※戻り値に`stream`が追加
 
 
+## Client Streaming RPC
+- 複数リクエスト・1レスポンスの方式
+- サーバーはクライアントからリクエスト完了の信号が送信されるまでストリームからメッセージを読み続け、レスポンスを返さない
+- 用途
+- - 大きなファイルのアップロードなど
 
+![ClientStreamingRPC](images/ClientStreamingRPC.png)
 
+- `Service定義`
+```
+message SayHelloRequest {}
+message SayHelloResponse {}
+
+service Greeter {
+    rpc SayHello (stream SayHelloRequest) returns (SayHelloReponse);
+}
+```
+※引数に`stream`が追加
+
+## Bidirectional Streaming RPC(双方向RPC)
+- 複数リクエスト・複数レスポンスの方針
+- クライアントとサーバーのストリームが独立しており、リクエストとレスポンスはどのような順序でもよい
+- 用途
+- - チャットやオンライン対戦ゲームなど
+![BidirectionalStreamingRPC](images/BidirectionalStreamingRPC.png)
+
+- `Service定義`
+```
+message SayHelloRequest {}
+message SayHelloResponse {}
+
+service Greeter {
+    rpc SayHello (stream SayHelloRequest) returns (stream SayHelloReponse);
+}
+```
+※戻り値と引数に`stream`が追加
