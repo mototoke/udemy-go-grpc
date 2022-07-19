@@ -23,7 +23,7 @@ Googleによって2008年にオープンソース化されたスキーマ言語
 
 
 ## JSONとの比較
-![Jsonとの比較](/images/jsonとの比較.png)
+![Jsonとの比較](images/jsonとの比較.png)
 
 
 ## Protocol Buffersを使用した開発の進め方
@@ -38,7 +38,7 @@ Googleによって2008年にオープンソース化されたスキーマ言語
 - 各言語のコードとしてコンパイルした場合、構造体やクラスとして変換される
 - 1つのprotoファイルに複数のmessage型を定義することも可能
 
-![message例](/images/message例.png)
+![message例](images/message例.png)
 - メッセージ名;
 - フィールド項目：型 - 名前 - タグ番号;
 
@@ -77,8 +77,8 @@ Googleによって2008年にオープンソース化されたスキーマ言語
 
 ## protocコマンド
 - `-IPATH, --proto_path=PATH`
-![IPATH1](/images/IPATH1.png)
-![IPATH2](/images/IPATH2.png)
+![IPATH1](images/IPATH1.png)
+![IPATH2](images/IPATH2.png)
 
 - `各言語に変換するためのオプション`
 - - オプションによってどの言語に変換するかを決定する
